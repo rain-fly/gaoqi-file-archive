@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gaoqi-file-archive | AI-Powered Material Organization</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-violet: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --accent-pink: #ec4899;
+            --gradient-hero: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+            --glow-cyan: 0 0 60px rgba(6, 182, 212, 0.3);
+            --glow-emerald: 0 0 60px rgba(16, 185, 129, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-cyan);
+            border-radius: 3px;
+        }
+
+        /* Grid background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            text-align: center;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 600px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-hero);
+            color: white;
+            box-shadow: var(--glow-cyan);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 80px rgba(6, 182, 212, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Problem Section */
+        .section {
+            padding: 8rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+        }
+
+        /* Problem cards */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .problem-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gradient-hero);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .problem-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .problem-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .problem-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .problem-icon.before { background: rgba(244, 63, 94, 0.2); }
+        .problem-icon.after { background: rgba(16, 185, 129, 0.2); }
+
+        .problem-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .problem-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Categories Section */
+        .categories {
+            background: var(--bg-secondary);
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .categories::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), transparent);
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card:hover {
+            transform: translateX(5px);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .category-abbr {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .category-card:nth-child(1) .category-abbr { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+        .category-card:nth-child(2) .category-abbr { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .category-card:nth-child(3) .category-abbr { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .category-card:nth-child(4) .category-abbr { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .category-card:nth-child(5) .category-abbr { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .category-card:nth-child(6) .category-abbr { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .category-card:nth-child(7) .category-abbr { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .category-card:nth-child(8) .category-abbr { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+
+        .category-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .category-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Workflow Section */
+        .workflow {
+            padding: 8rem 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .workflow-steps {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+        .workflow-steps::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-cyan), var(--accent-violet));
+        }
+
+        .workflow-step {
+            position: relative;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-step:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            transform: translateX(10px);
+        }
+
+        .workflow-step::before {
+            content: '';
+            position: absolute;
+            left: -3rem;
+            top: 2rem;
+            width: 24px;
+            height: 24px;
+            background: var(--bg-primary);
+            border: 3px solid var(--accent-cyan);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .workflow-step:nth-child(1)::before { border-color: #06b6d4; }
+        .workflow-step:nth-child(2)::before { border-color: #3b82f6; }
+        .workflow-step:nth-child(3)::before { border-color: #8b5cf6; }
+        .workflow-step:nth-child(4)::before { border-color: #10b981; }
+
+        .step-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Stats Section */
+        .stats {
+            background: var(--bg-secondary);
+            padding: 4rem 2rem;
+            margin-top: 4rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 1rem;
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Naming Section */
+        .naming {
+            padding: 6rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .naming-example {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+            overflow-x: auto;
+        }
+
+        .naming-rule {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            padding: 1rem 1.5rem;
+            background: rgba(6, 182, 212, 0.1);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .naming-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .naming-table th,
+        .naming-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .naming-table th {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .naming-table .arrow {
+            color: var(--accent-cyan);
+            text-align: center;
+        }
+
+        .filename {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(6, 182, 212, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: var(--accent-cyan);
+        }
+
+        /* Tech Stack */
+        .tech {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .tech-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tech-logo {
+            width: 64px;
+            height: 64px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover .tech-logo {
+            border-color: var(--accent-cyan);
+            transform: translateY(-5px);
+        }
+
+        .tech-name {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .footer-text a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        /* Animations on scroll */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .section {
+                padding: 4rem 1.5rem;
+            }
+
+            .workflow-steps {
+                padding-left: 2rem;
+            }
+
+            .workflow-step::before {
+                left: -2rem;
+            }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-badge">
+            AI-Powered &middot; Local Deployment &middot; Privacy First
+        </div>
+        <h1>
+            <span class="gradient-text">高企材料</span><br>
+            整理 Skill
+        </h1>
+        <p class="hero-subtitle">
+            基于 Ollama 视觉大模型的智能材料分类与整理系统，<br>
+            将混乱的文件目录自动归档为标准化结构
+        </p>
+        <div class="hero-cta">
+            <a href="#problem" class="btn btn-primary">了解更多</a>
+            <a href="scripts/pipeline.py" class="btn btn-secondary" download>下载使用</a>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="section" id="problem">
+        <div class="section-header reveal">
+            <div class="section-label">The Pain Points</div>
+            <h2 class="section-title">传统整理方式的困境</h2>
+        </div>
+
+        <div class="problem-grid">
+            <div class="problem-card reveal">
+                <div class="problem-icon before">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <h3 class="problem-title">文件名混乱</h3>
+                <p class="problem-desc">
+                    <strong style="color: #f43f5e;">Before:</strong> 新建文件夹(1).pdf<br>
+                    <strong style="color: #10b981;">After:</strong> P001_CERT_001.pdf
+                </p>
+            </div>
+
+            <div class="problem-card reveal">
+                <div class="problem-icon before">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                </div>
+                <h3 class="problem-title">耗时巨大</h3>
+                <p class="problem-desc">
+                    手工分类 500+ 文件<br>
+                    从<span style="color: #f43f5e;"> 一整天</span> →<br>
+                    AI 处理仅需<span style="color: #10b981;"> 几分钟</span>
+                </p>
+            </div>
+
+            <div class="problem-card reveal">
+                <div class="problem-icon before">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <h3 class="problem-title">分散管理</h3>
+                <p class="problem-desc">
+                    同一产品的证书分散在<br>
+                    多个文件夹中，难以追溯
+                </p>
+            </div>
+
+            <div class="problem-card reveal">
+                <div class="problem-icon before">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3 class="problem-title">容易遗漏</h3>
+                <p class="problem-desc">
+                    人工核对无法保证完整性<br>
+                    关键材料遗漏风险高
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories" id="categories">
+        <div class="section-header reveal">
+            <div class="section-label">8 Standard Categories</div>
+            <h2 class="section-title">严格按高企认定标准分类</h2>
+        </div>
+
+        <div class="category-grid">
+            <div class="category-card reveal">
+                <div class="category-abbr">IMG</div>
+                <div class="category-info">
+                    <h4>产品图片</h4>
+                    <p>产品外观、实拍照片</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">CERT</div>
+                <div class="category-info">
+                    <h4>产品证书</h4>
+                    <p>证书、认证、资质、ISO、3C</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">LIC</div>
+                <div class="category-info">
+                    <h4>产品生产批文</h4>
+                    <p>批文、许可、生产许可证</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">PROC</div>
+                <div class="category-info">
+                    <h4>生产工艺及亮点</h4>
+                    <p>工艺流程、配方技术参数</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">TEST</div>
+                <div class="category-info">
+                    <h4>产品检测报告</h4>
+                    <p>近三年检测、质检报告</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">CONT</div>
+                <div class="category-info">
+                    <h4>销售合同</h4>
+                    <p>近三年合同、协议</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">INVO</div>
+                <div class="category-info">
+                    <h4>销售发票</h4>
+                    <p>增值税专用发票</p>
+                </div>
+            </div>
+
+            <div class="category-card reveal">
+                <div class="category-abbr">REPO</div>
+                <div class="category-info">
+                    <h4>用户使用报告</h4>
+                    <p>使用反馈、体验报告</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section class="workflow" id="workflow">
+        <div class="section-header reveal">
+            <div class="section-label">How It Works</div>
+            <h2 class="section-title">智能化工作流程</h2>
+        </div>
+
+        <div class="workflow-steps">
+            <div class="workflow-step reveal">
+                <div class="step-number">STEP 01</div>
+                <h3 class="step-title">扫描源目录</h3>
+                <p class="step-desc">遍历原始材料目录，识别所有支持的文件格式（PDF、DOCX、图片等）</p>
+            </div>
+
+            <div class="workflow-step reveal">
+                <div class="step-number">STEP 02</div>
+                <h3 class="step-title">智能内容识别</h3>
+                <p class="step-desc">调用 Ollama 视觉大模型，分析文件内容并提取关键文字信息</p>
+            </div>
+
+            <div class="workflow-step reveal">
+                <div class="step-number">STEP 03</div>
+                <h3 class="step-title">自动分类归档</h3>
+                <p class="step-desc">根据内容匹配 8 大分类，创建标准化的目录结构</p>
+            </div>
+
+            <div class="workflow-step reveal">
+                <div class="step-number">STEP 04</div>
+                <h3 class="step-title">规范命名输出</h3>
+                <p class="step-desc">按命名规则重命名文件，生成完整分类报告，便于审计追溯</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Naming Section -->
+    <section class="section naming" id="naming">
+        <div class="section-header reveal">
+            <div class="section-label">File Naming</div>
+            <h2 class="section-title">标准化命名规则</h2>
+        </div>
+
+        <div class="naming-example reveal">
+            <div class="naming-rule">
+                {类型缩写}_{序号}_{发票号/产品信息}.{扩展名}
+            </div>
+
+            <table class="naming-table">
+                <thead>
+                    <tr>
+                        <th>原始文件名</th>
+                        <th></th>
+                        <th>整理后</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>新建文件夹(1).pdf</td>
+                        <td class="arrow">&rarr;</td>
+                        <td><span class="filename">CERT_001_国药证字Z20050605_阿胶养血颗粒.pdf</span></td>
+                    </tr>
+                    <tr>
+                        <td>微信图片_20240315.jpg</td>
+                        <td class="arrow">&rarr;</td>
+                        <td><span class="filename">IMG_001_阿胶养血颗粒.jpg</span></td>
+                    </tr>
+                    <tr>
+                        <td>合同_abc_2024.pdf</td>
+                        <td class="arrow">&rarr;</td>
+                        <td><span class="filename">CONT_001_XS202501014_强力枇杷露225ml60瓶件.pdf</span></td>
+                    </tr>
+                    <tr>
+                        <td>发票_xxx.pdf</td>
+                        <td class="arrow">&rarr;</td>
+                        <td><span class="filename">INVO_001_24342000000062288367_中成药半夏糖浆-中成药橘红颗粒-中成药六味地黄丸.pdf</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item reveal">
+                <div class="stat-number">8</div>
+                <div class="stat-label">标准分类</div>
+            </div>
+            <div class="stat-item reveal">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">文件/分钟</div>
+            </div>
+            <div class="stat-item reveal">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">处理记录</div>
+            </div>
+            <div class="stat-item reveal">
+                <div class="stat-number">0</div>
+                <div class="stat-label">数据上传</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="section tech">
+        <div class="section-header reveal">
+            <div class="section-label">Technology Stack</div>
+            <h2 class="section-title">技术栈</h2>
+        </div>
+
+        <div class="tech-stack">
+            <div class="tech-item reveal">
+                <div class="tech-logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v10"/>
+                        <path d="M1 12h6m6 0h10"/>
+                    </svg>
+                </div>
+                <span class="tech-name">Ollama</span>
+            </div>
+            <div class="tech-item reveal">
+                <div class="tech-logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="tech-name">Qwen VL</span>
+            </div>
+            <div class="tech-item reveal">
+                <div class="tech-logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="tech-name">Python 3</span>
+            </div>
+            <div class="tech-item reveal">
+                <div class="tech-logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 9h6v6H9z"/>
+                    </svg>
+                </div>
+                <span class="tech-name">PDF/DOCX</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">
+            高企材料整理 Skill &middot; 基于 <a href="https://ollama.com" target="_blank">Ollama</a> 视觉模型构建<br>
+            <br>
+            本地部署 &middot; 数据不上云 &middot; 隐私安全
+        </p>
+    </footer>
+
+    <script>
+        // Create floating particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Reveal on scroll
+        const revealElements = document.querySelectorAll('.reveal');
+
+        const revealOnScroll = () => {
+            revealElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight - 100) {
+                    el.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
