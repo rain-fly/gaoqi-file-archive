@@ -336,7 +336,7 @@ def parse_llm_response(response: str) -> dict:
 
 
 def classify_image(img_path: str,
-                  ollama_url: str = "http://localhost:11434",
+                  ollama_url: str = "http://192.168.1.26:11434",
                   model: str = "qwen3.5:0.8b",
                   think: bool = True,
                   timeout: int = 120) -> Dict[str, str]:
@@ -396,7 +396,7 @@ def is_image_file(file_path: str) -> bool:
 
 
 def classify_file(file_path: str,
-                   ollama_url: str = "http://localhost:11434",
+                   ollama_url: str = "http://192.168.1.26:11434",
                    model: str = "qwen3.5:0.8b",
                    think: bool = True,
                    timeout: int = 120) -> Dict[str, str]:
@@ -449,7 +449,7 @@ def parse_structured_response(response: str) -> dict:
 
 def extract_structured_info(img_path: str,
                              file_type: str,
-                             ollama_url: str = "http://localhost:11434",
+                             ollama_url: str = "http://192.168.1.26:11434",
                              model: str = "qwen3.5:0.8b",
                              think: bool = False,
                              timeout: int = 120) -> dict:

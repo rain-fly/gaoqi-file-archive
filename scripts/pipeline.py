@@ -54,7 +54,7 @@ class PipelineOrchestrator:
     def __init__(self,
                  input_dir: str,
                  output_dir: str,
-                 ollama_url: str = "http://localhost:11434",
+                 ollama_url: str = "http://192.168.1.26:11434",
                  model: str = "qwen3.5:0.8b",
                  think: bool = True,
                  copy_mode: bool = True,
@@ -522,7 +522,7 @@ def main():
   python scripts/pipeline.py -i ./客户原始数据 -o ./整理结果
 
   # 指定 Ollama 地址和模型
-  python scripts/pipeline.py -i ./客户原始数据 -o ./整理结果 --ollama-url http://localhost:11434 --model qwen3.5:0.8b
+  python scripts/pipeline.py -i ./客户原始数据 -o ./整理结果 --ollama-url http://192.168.1.26:11434 --model qwen3.5:0.8b
 
   # 禁用思考模式（更快）
   python scripts/pipeline.py -i ./客户原始数据 -o ./整理结果 --no-think
@@ -539,8 +539,8 @@ def main():
                         help="输入目录（原始材料）")
     parser.add_argument("-o", "--output", required=True,
                         help="输出目录（分类整理后的文件）")
-    parser.add_argument("--ollama-url", default="http://localhost:11434",
-                        help="Ollama 服务地址 (默认: http://localhost:11434)")
+    parser.add_argument("--ollama-url", default="http://192.168.1.26:11434",
+                        help="Ollama 服务地址 (默认: http://192.168.1.26:11434)")
     parser.add_argument("--model", default="qwen3.5:0.8b",
                         help="Ollama 模型名称 (默认: qwen3.5:0.8b)")
     parser.add_argument("--no-think", action="store_true",
