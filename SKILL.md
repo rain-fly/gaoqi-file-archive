@@ -25,23 +25,51 @@ description: |
 
 ## 核心脚本
 
-### main.py - 主程序入口
+### pipeline.py - 主程序入口（推荐使用）
 
-核心流程：
-1. 扫描源目录（客户原始数据）
-2. 调用 Ollama 模型识别文件内容
-3. 根据文件内容匹配分类
-4. 重命名文件（格式：`{产品编号}_{类型缩写}_{序号}.{原扩展名}`）
-5. 输出到整理结果目录
+使用 Ollama 视觉模型进行智能分类的完整流水线。
 
-### classify.py - 文件分类模块
+**核心流程：**
+1. 遍历输入目录所有支持的文件
+2. 判断文件类型：
+   - 图片文件 (.jpg, .png 等) → 直接用 Ollama 分类
+   - 文档文件 (.pdf, .docx) → 转换为第一页图片 → 用 Ollama 分类
+3. 分类完成后重命名并移动到对应目录
 
-根据文件扩展名和内容初步分类：
-- `.pdf` → 优先 CERT/LIC/TEST/CONT
-- `.jpg/.png/.jpeg` → 优先 IMG
-- `.doc/.docx` → 需OCR识别
+**使用方法：**
+```bash
+cd C:\Users\Administrator\.claude\skills\gaoqi-material-organizer
+D:\Python311\python.exe scripts\pipeline.py -i "客户原始数据目录" -o "整理结果目录"
+```
 
-### rename.py - 文件重命名模块
+**参数说明：**
+- `-i, --input`: 输入目录（客户原始数据）
+- `-o, --output`: 输出目录（整理结果）
+- `--copy-mode`: 复制模式（默认True，移动为False）
+- `--skip-existing`: 跳过已处理文件（默认True）
+- `--debug`: 调试模式
+
+**示例：**
+```bash
+D:\Python311\python.exe scripts\pipeline.py -i "C:\Users\Administrator\Desktop\霍山回音必\客户原始数据" -o "C:\Users\Administrator\Desktop\霍山回音必\整理结果"
+```
+
+### ollama_vision_classify.py - Ollama视觉分类模块
+
+使用 Ollama 视觉模型识别图片内容并分类：
+- `classify_image()` - 核心分类函数
+- `is_image_file()` - 判断是否为图片文件
+- `key_to_category` - 类型关键词映射
+- `extract_structured_info()` - 提取结构化信息
+- `generate_filename_from_info()` - 生成规范化文件名
+
+### document_to_image.py - 文档转图片模块
+
+将 PDF/DOCX 文档转换为图片：
+- `convert_first_page_to_image()` - 转换文档第一页为图片
+- `is_document_file()` - 判断是否为文档文件
+
+### rename_files.py - 文件重命名模块
 
 命名规则：
 ```
@@ -51,10 +79,6 @@ description: |
 示例：
 - `P001_CERT_001.pdf`
 - `P002_TEST_001.pdf`
-
-### ocr.py - OCR识别模块
-
-使用 Ollama 模型进行内容理解，识别文件类型。
 
 ## 工作流程
 
@@ -78,13 +102,19 @@ description: |
 gaoqi-material-organizer/
 ├── SKILL.md
 ├── scripts/
-│   ├── main.py       # 主程序
-│   ├── classify.py   # 分类模块
-│   ├── rename.py     # 重命名模块
-│   └── ocr.py        # OCR识别
+│   ├── pipeline.py              # 主程序入口（推荐使用）
+│   ├── ollama_vision_classify.py # Ollama视觉分类
+│   ├── document_to_image.py      # 文档转图片
+│   └── rename_files.py           # 文件重命名
 └── references/
     └── 产品分类说明.md
 ```
+
+## Python环境要求
+
+- Python路径：`D:\Python311\python.exe`
+- 或使用：`where python` 查找系统Python路径
+- 必需依赖：pillow, pypdf 等（pip install pillow pypdf）
 
 ## 注意事项
 
