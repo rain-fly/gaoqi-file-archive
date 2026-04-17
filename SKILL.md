@@ -1,124 +1,139 @@
 ---
 name: gaoqi-material-organizer
 description: |
-  高新技术企业材料整理智能体。当用户需要整理高企（高新技术企业）认定材料、归档证明文件、按产品分类整理材料时使用本技能。
-  适用场景：整理评审材料、归档产品证书、整理产品资料、按产品线分类证明材料、整理客户原始数据。
-  使用条件：已部署 Ollama 本地模型服务，地址：http://192.168.1.26:11001/
+  高新技术企业材料整理 skill。用于按产品线批量整理客户原始文件、归档证明材料、调用仓库内现有脚本完成分类与重命名，并输出整理结果目录。只要任务与“高企材料整理、归档、分类、批量重命名、按产品分类证明材料、整理客户原始数据”有关，就应触发本 skill。命中后必须优先直接运行现有 `scripts/pipeline.py`，不得重写同功能 Python；只有脚本缺失、当前环境没有命令执行能力、或脚本运行失败时，才允许排障或修改现有脚本。
 ---
 
-# 高企材料整理智能体
+# gaoqi-material-organizer
 
-将客户提供的证明材料目录，自动识别并分类到8种固定产品类型，同时重命名混乱的文件名。
+## 强执行规则
 
-## 8种产品分类
+- 命中本 skill 后，默认目标是“直接运行现有脚本”，不是重新实现一套逻辑。
+- 必须优先使用仓库内现有入口：`scripts/pipeline.py`
+- 禁止为了完成同一任务而新建或临时编写新的分类/重命名/调度 Python 脚本。
+- 只有以下情况才允许改代码：
+  - `scripts/pipeline.py` 不存在
+  - 当前环境没有可用的命令执行工具
+  - 脚本运行报错，且修复现有脚本是完成任务所必需
+  - 用户明确要求修改脚本逻辑
+- 如果只是缺少输入路径、输出路径、模型名、Ollama 地址等运行参数，不要改写脚本，直接补齐参数并运行。
+- 如果当前宿主没有 shell/命令执行能力，要明确说明“无法直接运行现有脚本”，不得改为手写同功能 Python 作为替代。
 
-| 类型 | 缩写 | 说明 |
-|------|------|------|
-| 产品图片 | IMG | 产品外观、实拍照片 |
-| 产品证书 | CERT | 证书、认证、资质、ISO、3C等 |
-| 产品生产批文 | LIC | 批文、许可、生产许可证、注册证 |
-| 产品生产工艺及特色亮点 | PROC | 工艺流程、特点优势、配方技术参数 |
-| 近三年产品检测报告 | TEST | 检测、检验、质检报告 |
-| 近三年销售合同 | CONT | 合同、协议、采购订单 |
-| 近三年销售发票 | INVO | 发票、增值税专用发票 |
-| 用户使用报告 | REPO | 使用报告、用户反馈、体验报告 |
+## 固定工作流
 
-## 核心脚本
+按下面顺序执行，不要跳步：
 
-### pipeline.py - 主程序入口（推荐使用）
+1. 确认仓库根目录下存在 `scripts/pipeline.py`
+2. 确认输入目录与输出目录
+3. 探测可用 Python 解释器
+4. 直接运行 `scripts/pipeline.py`
+5. 读取运行结果，向用户汇报成功、失败或需要补充的信息
 
-使用 Ollama 视觉模型进行智能分类的完整流水线。
+不要先读完整源码再决定怎么做。  
+不要先重写逻辑再尝试运行。  
+不要把本 skill 当成“参考实现说明书”。
 
-**核心流程：**
-1. 遍历输入目录所有支持的文件
-2. 判断文件类型：
-   - 图片文件 (.jpg, .png 等) → 直接用 Ollama 分类
-   - 文档文件 (.pdf, .docx) → 转换为第一页图片 → 用 Ollama 分类
-3. 分类完成后重命名并移动到对应目录
+## 解释器探测
 
-**使用方法：**
+按下面顺序寻找解释器：
+
+1. `python`
+2. `py -3`
+
+优先使用当前环境可用解释器，不要写死绝对路径。  
+不要默认使用 `D:\Python311\python.exe`。  
+不要假设 skill 一定安装在某个固定目录。
+
+## 标准执行命令
+
+在仓库根目录执行：
+
 ```bash
-cd C:\Users\Administrator\.claude\skills\gaoqi-material-organizer
-D:\Python311\python.exe scripts\pipeline.py -i "客户原始数据目录" -o "整理结果目录"
+python scripts/pipeline.py -i "<input_dir>" -o "<output_dir>"
 ```
 
-**参数说明：**
-- `-i, --input`: 输入目录（客户原始数据）
-- `-o, --output`: 输出目录（整理结果）
-- `--copy-mode`: 复制模式（默认True，移动为False）
-- `--skip-existing`: 跳过已处理文件（默认True）
-- `--debug`: 调试模式
+如果 `python` 不可用，再尝试：
 
-**示例：**
 ```bash
-D:\Python311\python.exe scripts\pipeline.py -i "C:\Users\Administrator\Desktop\霍山回音必\客户原始数据" -o "C:\Users\Administrator\Desktop\霍山回音必\整理结果"
+py -3 scripts/pipeline.py -i "<input_dir>" -o "<output_dir>"
 ```
 
-### ollama_vision_classify.py - Ollama视觉分类模块
+如需覆盖默认模型或服务地址，可附加参数：
 
-使用 Ollama 视觉模型识别图片内容并分类：
-- `classify_image()` - 核心分类函数
-- `is_image_file()` - 判断是否为图片文件
-- `key_to_category` - 类型关键词映射
-- `extract_structured_info()` - 提取结构化信息
-- `generate_filename_from_info()` - 生成规范化文件名
-
-### document_to_image.py - 文档转图片模块
-
-将 PDF/DOCX 文档转换为图片：
-- `convert_first_page_to_image()` - 转换文档第一页为图片
-- `is_document_file()` - 判断是否为文档文件
-
-### rename_files.py - 文件重命名模块
-
-命名规则：
-```
-{产品编号}_{类型缩写}_{序号}.{扩展名}
+```bash
+python scripts/pipeline.py -i "<input_dir>" -o "<output_dir>" --ollama-url "<ollama_url>" --model "<model>"
 ```
 
-示例：
-- `P001_CERT_001.pdf`
-- `P002_TEST_001.pdf`
+如需保留原文件而不是移动文件，优先使用脚本已有参数，不要改代码。  
+如需调试，优先添加 `--debug` 等已有参数，不要重写逻辑。
 
-## 工作流程
+## 已有入口与职责
 
-1. **扫描源目录** → 读取所有文件
-2. **初步分类** → 按扩展名和文件大小初步判断
-3. **深度识别** → 使用 Ollama 分析内容
-4. **确认分类** → 输出分类结果供确认
-5. **执行整理** → 复制/移动到目标目录
+- `scripts/pipeline.py`
+  - 主入口
+  - 负责遍历输入目录、调度分类、整理输出结果
+- `scripts/ollama_vision_classify.py`
+  - 图像分类与结构化信息提取
+- `scripts/document_to_image.py`
+  - 文档首页转图片
+- `scripts/rename_files.py`
+  - 基于分类结果进行重命名
 
-## 使用方式
+这些文件的存在意义是“直接复用”。  
+除非出现失败，不要为了完成一次运行去复制这些逻辑。
 
-```
-用户说："帮我整理这个目录的材料"
-用户说："按照产品分类这些文件"
-用户说："把高企认定材料归档"
-```
+## 允许做的事
 
-## 目录结构
+- 运行 `scripts/pipeline.py`
+- 传入正确的输入输出目录
+- 在脚本已有参数范围内切换模型、Ollama 地址、调试开关
+- 当脚本失败时阅读报错并定位原因
+- 只在必要时修补现有脚本
 
-```
-gaoqi-material-organizer/
-├── SKILL.md
-├── scripts/
-│   ├── pipeline.py              # 主程序入口（推荐使用）
-│   ├── ollama_vision_classify.py # Ollama视觉分类
-│   ├── document_to_image.py      # 文档转图片
-│   └── rename_files.py           # 文件重命名
-└── references/
-    └── 产品分类说明.md
-```
+## 禁止做的事
 
-## Python环境要求
+- 新建 `tmp_pipeline.py`、`run_pipeline.py`、`classify_again.py` 之类的替代脚本
+- 为了“更方便调用”而复制 `pipeline.py` 中的逻辑到新文件
+- 因为不确定环境路径就直接重新写一套实现
+- 在未尝试运行现有脚本前，先实现自己的分类器、重命名器、批处理器
 
-- Python路径：`D:\Python311\python.exe`
-- 或使用：`where python` 查找系统Python路径
-- 必需依赖：pillow, pypdf 等（pip install pillow pypdf）
+## 失败处理
 
-## 注意事项
+如果运行失败，按下面顺序处理：
 
-- 处理前先备份原始数据
-- 分类结果需用户确认后再执行移动
-- 支持的文件格式：PDF, JPG, PNG, DOC, DOCX
-- 最大支持文件：100MB
+1. 检查解释器是否可用
+2. 检查 `scripts/pipeline.py` 是否存在
+3. 检查输入目录、输出目录是否存在且可访问
+4. 检查脚本依赖是否缺失
+5. 检查 Ollama 服务地址、模型名是否可达
+6. 只有在确认问题位于现有脚本内部时，才修改现有脚本
+
+如果缺的是依赖或环境，不要重写脚本规避问题。  
+如果缺的是参数，不要重写脚本规避问题。  
+如果是宿主没有 shell 能力，要直接说明限制。
+
+## 对用户的输出要求
+
+完成任务时，优先汇报以下内容：
+
+- 实际执行的命令
+- 使用的输入目录与输出目录
+- 是否成功
+- 输出目录位置
+- 若失败，给出具体失败点
+
+不要向用户声称“已按 skill 执行”但实际上没有运行脚本。  
+不要把“阅读了脚本并复述逻辑”当成完成任务。
+
+## 触发示例
+
+以下请求应触发本 skill：
+
+- “把这一批高企材料按产品整理一下”
+- “帮我归档这些证明文件”
+- “把客户原始数据跑一遍分类整理”
+- “按产品线整理这些证书、检测、合同、发票材料”
+
+## 一句话原则
+
+先运行现有 `scripts/pipeline.py`，再谈修复；能直接执行就不要重写。
